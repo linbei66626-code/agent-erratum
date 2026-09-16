@@ -1,0 +1,49 @@
+{
+  "schema": "ae-vita-scorer-baseline-1",
+  "note": "Pinned scoring-module baseline for the multi-turn input audit. The digests are the ARCHIVED pinned source's own module bytes, so the audit compares the modules it imports with a declaration instead of with their own freshly computed digests.",
+  "generated_by": "tools/build_vita_scorer_baseline.py",
+  "archive": {
+    "path": "deployment-assets/ae-vita-data-20260911-r1.tar.gz",
+    "sha256": "8aea75c1dc5be61e2289ed4855ac36f01677ec9cfae6108a8ec04dac236bac04",
+    "bytes": 21502491,
+    "member_prefix": "source/",
+    "pinned_revision": "f60169e89f30499cb7883f3dad76bd03facc908d"
+  },
+  "roots": [
+    "$AE_VITA_BASELINE_ROOT",
+    "$AE_VERIFY_ROOT",
+    "$REPO"
+  ],
+  "modules": {
+    "src/vita/evaluator/evaluator_traj.py": {
+      "sha256": "832b8643d0c26acd6be57074ae8a98a6d3bac41b40b3e1d22aade43522d38ba8",
+      "bytes": 28016
+    },
+    "src/vita/data_model/message.py": {
+      "sha256": "6a7bab5f41174d2d03b5d931bacd88581ef1dc8edd7cd53b01def5e3b95020c3",
+      "bytes": 7543
+    },
+    "src/vita/data_model/simulation.py": {
+      "sha256": "207b6cf3205d90f96d2e25e763adb52f55a15d540c353f767d4524efba964f80",
+      "bytes": 14299
+    },
+    "src/vita/data_model/tasks.py": {
+      "sha256": "71b7a86fbe33d1f2f380ab7046e0c4a06df9acfe13b1a39fabc3754984b07cda",
+      "bytes": 17059
+    },
+    "src/vita/utils/utils.py": {
+      "sha256": "16f56fe8b1cb85e942731a416bc33361d55c695e8e0c2739ac093cd23eb9a9d2",
+      "bytes": 7116
+    },
+    "src/vita/prompts/__init__.py": {
+      "sha256": "d0bfe44c248711257564532660b434f089465147e68b35a212829babdc0d3533",
+      "bytes": 1428
+    }
+  },
+  "environment": {
+    "baseline_path": "AE_VITA_SCORER_BASELINE",
+    "archive_path": "AE_VITA_BASELINE_ARCHIVE",
+    "root_path": "AE_VITA_BASELINE_ROOT"
+  },
+  "strict": "the audit requires the archive to be present and to match archive.sha256, extracts each module's bytes and compares them with the imported file's bytes; a missing archive, a changed archive, a changed module file or a module imported from another checkout is refused"
+}

@@ -1,0 +1,89 @@
+{
+  "schema": "ae-letta-no-compaction-manifest-2",
+  "profile_version": "ae-no-compaction-1",
+  "note": "Pinned-Letta no-compaction + request-time capacity protection. The patch applies on top of the reviewed multicall patch (ae-multicall-receive-compat-1) and the SERVICE now loads that stacked tree under its own declared profile (see stack-manifest.json and `ae_multicall.STACK_ENV_VAR`); the order of the patch chain is part of the contract. Nothing here changes the upstream default: an agent with no AE capacity tag compacts exactly as before.",
+  "verification": {
+    "offline_patch_verified": true,
+    "applied_to_live_server": false,
+    "note": "offline_patch_verified means the stacked bytes equal the pinned baseline plus the reviewed multicall patch plus this reviewed patch plus this round's staged helper sources. applied_to_live_server is only set once the running service itself produced a stack load receipt; the audit requires that receipt and never accepts a client-built one."
+  },
+  "upstream_commit": "56ba9c25552605eec89de8ed3dc6394b625c1993",
+  "patch_chain": [
+    "deployment-assets/letta-multicall/ae-multicall-letta.patch",
+    "deployment-assets/letta-no-compaction/ae-no-compaction-letta.patch"
+  ],
+  "policy": {
+    "name": "ae-no-compaction",
+    "version": 1,
+    "tag": "ae-no-compaction:1",
+    "declared_by": "the AE driver's agent creation payload tags, one per agent",
+    "enforced_at": [
+      "letta/services/summarizer/compact.py::compact_messages - the single place a compaction reaches a summariser, reached from BOTH pinned trigger paths (post_step_context_check and context_window_exceeded)",
+      "letta/agents/letta_agent_v3.py::LettaAgentV3.step - the request-time capacity gate, immediately after the final provider request is built"
+    ],
+    "unknown_policy": "refused: an unrecognised ae-no-compaction:* tag raises instead of falling back to the upstream default",
+    "default_behaviour": "unchanged: no tag means no guard and no gate"
+  },
+  "patch": {
+    "path": "deployment-assets/letta-no-compaction/ae-no-compaction-letta.patch",
+    "sha256": "3d14593e268620da40afddd19c761601b9bccc44ad86a156d2e0d6faf5796aac",
+    "applies_with": "git apply",
+    "patch_base": "the multicall-patched checkout root",
+    "adds": "nothing: the two helper modules are NOT in the patch, because the checkout is rebuilt by copying the staged sources and their digests are checked separately"
+  },
+  "new_files": {
+    "letta/helpers/ae_no_compaction.py": {
+      "source": "deployment-assets/letta-no-compaction/files/letta/helpers/ae_no_compaction.py",
+      "sha256": "77603ba435dd0fe5a65779c1acbda770a9e664fdcb5e8fe4f929188b23f77121",
+      "provides": "policy_state / require_no_compaction / no_compaction_declared (the summariser guard), `capacity_gate_decision` (the request-time decision, refusing a missing or undeclared counting basis) and `dict_request_contract` (the pinned wire-request contract check)"
+    },
+    "letta/helpers/ae_qwen_tokenizer.py": {
+      "source": "deployment-assets/letta-no-compaction/files/letta/helpers/ae_qwen_tokenizer.py",
+      "sha256": "0b50de7ebe9f76be75318728a6a996200e688e0917f431d92d1b3d4bc487c740",
+      "note": "generated from ae_multiturn_capacity.py by tools/stage_letta_tokenizer.py; tools/check_tokenizer_drift.py proves the two stay identical. It carries the SAME `count_request_prompt` entry the report and the proxy use, so the service gate and the capacity report count one contract, not two."
+    }
+  },
+  "patched_files": {
+    "letta/agents/letta_agent_v3.py": {
+      "baseline_sha256": "702031b3dac0de25bb452bea710d207dee48c55dca94be79a1cfcde2d077ff74",
+      "patched_sha256": "a6f6aa7adffc20743c8433129d8d02cb2b571f2111f9f3f095206cba54f11e30",
+      "baseline_is": "the multicall-patched bytes of the pinned checkout"
+    },
+    "letta/services/summarizer/compact.py": {
+      "baseline_sha256": "8c12936df53e56204baab2cc1807094afe1c53021b418d3fc77fda9923393df9",
+      "patched_sha256": "b294a42574d15256ff77faf0eb0413dcfbc2c7cdcdc08183c0eb40889d02efc5",
+      "baseline_is": "the multicall-patched bytes of the pinned checkout"
+    }
+  },
+  "capacity_gate": {
+    "count_basis": [
+      "official_qwen_tokenizer: the shared `count_request_prompt` entry over the exact request body (messages incl. the system prompt, and the wire tool schemas), rendered with the official chat template and tokenized with the official assets",
+      "pinned_token_counter: Letta's own `count_tokens_with_tools`; consulted ONLY after a primary count exists and used only when it counts MORE, so the gate can only get stricter and an approximation can never authorise"
+    ],
+    "no_fallback": "a byte length or bytes-per-token ratio can UNDER-estimate (10000 ASCII digits are 10000 official tokens but ~4167 at 2.4 bytes/token), so a request whose primary count is missing or raises is REFUSED rather than passed or approximated",
+    "count_source_required": "the decision record must name the counting basis it used; an empty or missing `count_source` is refused as `count_source_undeclared`",
+    "asset_identity": "the counting assets must be the ones the run declared (`capacity.tokenizer`); a family or exploration asset is labelled as such, and the RUN-stage decision refuses an exploration asset",
+    "boundary": "input + THIS role's own output reserve <= the declared context_window",
+    "per_role_reserve": {
+      "agent": "llm_config.max_tokens",
+      "auxiliary": "the auxiliary role's own cap"
+    },
+    "environment": {
+      "AE_QWEN_TOKENIZER_JSON": "path to the official tokenizer.json",
+      "AE_QWEN_TOKENIZER_CONFIG": "path to the official tokenizer_config.json"
+    },
+    "claim": "offline compatibility evidence only; the live-load claim needs the service's own stack load receipt (see stack-manifest.json)"
+  },
+  "upstream_baseline": {
+    "ae_no_compaction_policy": "ae-no-compaction-1"
+  },
+  "patch_base": "the reviewed multicall-patched checkout (deployment-assets/letta-multicall/ae-multicall-letta.patch applied to the pinned upstream checkout)",
+  "deployment_layout": {
+    "service_checkout": "the STACKED checkout (multicall + this patch): the service loads it under AE_LETTA_PATCH_STACK_PROFILE=ae-no-compaction-stack-1, whose manifest (deployment-assets/letta-no-compaction/stack-manifest.json) pins every changed and new file",
+    "multicall_only_checkout": "kept for the earlier multicall protocol: its manifest, checkout and load receipt are unchanged, so a protocol that never declared the capacity contract keeps its identity",
+    "receipt": "the service process writes a stack load receipt after resolving the files it really imports; a client-built receipt is never accepted",
+    "why": "the r2 layout ran the service from the multicall-only checkout and the agents from a separate stacked tree; R3-1 closed that gap by giving the stacked tree its own declared profile, manifest and receipt instead of a second tree"
+  },
+  "generated_at_utc": "2026-09-14T08:36:08.688396+00:00",
+  "stack_manifest": "deployment-assets/letta-no-compaction/stack-manifest.json"
+}

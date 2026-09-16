@@ -1,0 +1,30 @@
+{
+  "schema_version": "ae-cloud-t4-probe-0.1",
+  "source_note": "Official direct API confirmed by user; documentation checked 2026-09-15. Single t4 screening; byte budget is not a token-capacity guarantee.",
+  "identity": {
+    "probe": "required",
+    "evidence": "https://api-docs.deepseek.com/quick_start/pricing/ (2026-09-15: deepseek-flash -> V4.1-Flash; live model listing still required)",
+    "why": null
+  },
+  "api": {
+    "base_url": "https://api.deepseek.com",
+    "chat_path": "/chat/completions",
+    "models_path": "/models",
+    "tokenize_path": null
+  },
+  "wire_model": "deepseek-flash",
+  "mode": {
+    "name": "non-thinking",
+    "payload": {
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "source": "https://api-docs.deepseek.com/guides/thinking_mode/ (checked 2026-09-15)"
+  },
+  "capacity": {
+    "token_counting_available": false,
+    "max_request_bytes": 262144,
+    "declared_context_window_tokens": 1000000
+  }
+}

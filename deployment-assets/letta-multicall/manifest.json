@@ -1,0 +1,65 @@
+{
+  "schema": "ae-letta-multicall-manifest-1",
+  "profile_version": "ae-multicall-receive-compat-1",
+  "verification": {
+    "offline_patch_verified": true,
+    "applied_to_live_server": false,
+    "note": "offline_patch_verified means the candidate bytes equal the pinned baseline plus the reviewed patch. applied_to_live_server is only set once the running service itself produced a load receipt; the audit requires that receipt and never accepts a client-built one."
+  },
+  "generated_at_utc": "2026-09-16T03:13:48.278731+00:00",
+  "upstream_baseline": {
+    "letta/agents/letta_agent_v3.py": "1f11745d6ae86e64e90c76e287d25552a6c7823a8109b178da6951b21c788166",
+    "letta/schemas/message.py": "c50de8d2792645a51f34f8f264c85bcea8ad252527270e96ebbe23bdd8a8e7e6"
+  },
+  "upstream_commit": "56ba9c25552605eec89de8ed3dc6394b625c1993",
+  "enabling": {
+    "environment": "AE_LETTA_MULTICALL_PROFILE",
+    "value": "ae-multicall-receive-compat-1",
+    "manifest_environment": "AE_LETTA_MULTICALL_MANIFEST",
+    "module_sha_environment": "AE_LETTA_MULTICALL_MODULE_SHA256",
+    "support_path_environment": "AE_LETTA_MULTICALL_SUPPORT",
+    "strict_gate": "the runtime calls ae_multicall.verify_letta_gate(); a declared profile that does not verify stops the step before any side effect, it does not truncate"
+  },
+  "compat_module": {
+    "path": "ae_multicall.py",
+    "sha256": "1ea94fbd75f6d5018ae85a18b3ca8b591049a207ef6da938a08c83ad6a540b5a"
+  },
+  "baseline_checkout": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/.ae-verify-src/letta-v1",
+  "letta_checkout": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/.ae-verify-src/letta-multicall-patch/letta-v1",
+  "shim_source": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/deployment-assets/letta-multicall/files/letta/helpers/ae_multicall_compat.py",
+  "patch": {
+    "path": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/deployment-assets/letta-multicall/ae-multicall-letta.patch",
+    "sha256": "c347e2245c824c2c5100bbe3b63f18f0094d1a31593b8c3da19327e24b7ca35a",
+    "build_script": "deployment-assets/letta-multicall/build_patch.py",
+    "build_script_sha256": "d0b2ca6738762fa00ea5c8abe120027cbb4567a4efc26db448adb1b925474801",
+    "applies_with": "git apply",
+    "patch_base": "pinned checkout root"
+  },
+  "embedding_patch": {
+    "path": "deployment-assets/letta-multicall/embed_patch.py",
+    "sha256": "74bdbf1f273087692e66691f4e7468db97806a632e5fe606db680673d2a951a9",
+    "note": "applies the same edits without git, for a non-git checkout"
+  },
+  "patched_files": {
+    "letta/agents/letta_agent_v3.py": {
+      "baseline_sha256": "1f11745d6ae86e64e90c76e287d25552a6c7823a8109b178da6951b21c788166",
+      "patched_sha256": "702031b3dac0de25bb452bea710d207dee48c55dca94be79a1cfcde2d077ff74"
+    },
+    "letta/schemas/message.py": {
+      "baseline_sha256": "c50de8d2792645a51f34f8f264c85bcea8ad252527270e96ebbe23bdd8a8e7e6",
+      "patched_sha256": "8e2f28d8fd24defede7ce8b97b66ac0ffb227d84065f24f16c989a2ee88529eb"
+    },
+    "letta/helpers/ae_multicall_compat.py": {
+      "baseline_sha256": null,
+      "patched_sha256": "faec1925f07c8a52600c3fc0d0a04639e0f260718d0d27fe3525a878982bc26b"
+    }
+  },
+  "verification_tools": {
+    "offline_script": "deployment-assets/letta-multicall/verify_deployment.py",
+    "focused_tests": [
+      "tests/test_ae_multicall.py",
+      "tests/test_ae_multicall_letta.py"
+    ],
+    "claim": "offline compatibility evidence only; it does not claim a live server loaded this patch or that any cloud call passed"
+  }
+}

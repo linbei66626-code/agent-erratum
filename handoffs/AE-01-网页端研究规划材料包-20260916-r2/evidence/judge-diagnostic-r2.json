@@ -1,0 +1,154 @@
+{
+  "diagnostic_only": true,
+  "input_audit_passed": false,
+  "official_audit_reasons": [
+    {
+      "code": "judged_simulation_missing_for_this_task"
+    }
+  ],
+  "tasks": [
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_4",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 13,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_5",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 18,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_6",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 15,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_7",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 20,
+      "failure": "judge_decision_rubric_text_differs_from_the_criteria",
+      "exception": "AuditFailure",
+      "line": 34
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_8",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 25,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_9",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 15,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_10",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 20,
+      "failure": "judge_decision_rubric_text_differs_from_the_criteria",
+      "exception": "AuditFailure",
+      "line": 34
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_11",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 11,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_12",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 15,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_4",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 14,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_5",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 35,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_6",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 13,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_7",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 13,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_8",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 27,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_9",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 19,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_10",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 14,
+      "failure": "judge_decision_rubric_text_differs_from_the_criteria",
+      "exception": "AuditFailure",
+      "line": 34
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_11",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 14,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_12",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 14,
+      "remaining_judge_gate": "passed"
+    }
+  ],
+  "adaptations": [
+    "Simulation located by exact completed.subtask_id and crosschecked with last_evaluation; native Task prefix checked; message conversion verified except generated timestamp absent from original transcript; diagnostic judge view uses original transcript and subtask_id.",
+    "Auxiliary diagnostic preserves verified phase order and within-phase recorded list order; does not fabricate missing recorded_at. All other auxiliary checks remain."
+  ],
+  "later_checks": {
+    "auxiliary_record_order_diagnostic": "passed",
+    "cloud_totals_gate": "passed",
+    "separation_gate": "passed"
+  },
+  "judge_chains_passed": 15,
+  "auxiliary_mappings": 98
+}

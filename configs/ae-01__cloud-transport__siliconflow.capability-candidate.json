@@ -1,0 +1,10 @@
+{
+  "profile": "siliconflow-letta-text-transport-v2-prototype",
+  "upstream_origin": "https://api.siliconflow.cn",
+  "model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+  "max_output_tokens": 4096,
+  "max_request_bytes": 2097152,
+  "max_response_bytes": 16777216,
+  "max_requests": 256,
+  "io_timeout_seconds": 180
+}

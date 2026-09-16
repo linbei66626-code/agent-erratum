@@ -1,0 +1,22 @@
+[
+  {
+    "source_relative": "transfers/ae-deepseek-re-complete-20260916-r5/deployment/runs/ae-deepseek-re-live-20260916-r5/plan.json",
+    "bytes": 380171,
+    "sha256": "8add7b381af990d2c20bcdc7ee6a4442f143e92a270d0a0407cb385c7110b732"
+  },
+  {
+    "source_relative": "transfers/ae-deepseek-re-complete-20260916-r5/deployment/runs/ae-deepseek-re-live-20260916-r5/result.json",
+    "bytes": 80820414,
+    "sha256": "3857242f9e76826d1675ede518ebf3feb9821225a0fbb26302a115af6686f34a"
+  },
+  {
+    "source_relative": "transfers/ae-deepseek-re-complete-20260916-r5/input-audit-offline-env-r1.json",
+    "bytes": 119730,
+    "sha256": "bffbf49912f35c644de0d1b851f0095a1ab996e32b88a14ecc0733343c734c80"
+  },
+  {
+    "source_relative": "transfers/ae-deepseek-re-complete-20260916-r5/README.md",
+    "bytes": 3686,
+    "sha256": "20f9bddc02bc5bd5edc5558c641522bd1ef9a05d287b0fbc65ccd28f17dea4a5"
+  }
+]

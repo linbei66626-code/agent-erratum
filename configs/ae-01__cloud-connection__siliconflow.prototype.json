@@ -1,0 +1,18 @@
+{
+  "schema_version": "ae-cloud-connection-0.1",
+  "purpose": "connectivity_only",
+  "model_origin": "http://127.0.0.1:8000",
+  "letta_origin": "http://127.0.0.1:8283",
+  "model_handle": "vllm/Qwen/Qwen3-30B-A3B-Instruct-2507",
+  "expected_model": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+  "context_window": 8192,
+  "context_window_source": "local_agent_budget_not_server_measurement",
+  "transport_profile": "siliconflow-letta-text-transport-v2-prototype",
+  "max_output_tokens": 256,
+  "temperature": 0,
+  "max_rounds": 3,
+  "max_steps": 3,
+  "timeout_seconds": 60,
+  "max_request_bytes": 262144,
+  "max_response_bytes": 1048576
+}

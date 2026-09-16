@@ -1,0 +1,183 @@
+{
+  "source": "sealed r5 plan.json",
+  "scope": {
+    "user_id": "U000828",
+    "start_turn": 4,
+    "end_turn": 12,
+    "task_numbers": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "task_count": 9,
+    "phase_count": 18,
+    "arm_order": [
+      "rewrite",
+      "erratum"
+    ],
+    "arm_order_source": "fixed_before_any_result:rewrite_t4_to_t12_then_erratum_t4_to_t12",
+    "execution_model": "one persistent agent per arm; R's 9 phases first, then E's 9 phases; never interleaved",
+    "dataset_history_sent": true,
+    "memory_update_tool": true,
+    "pair_request_budget": {
+      "max_requests": 1024,
+      "counting": "whole pair, every provider role, every task of both arms, counted by the proxy's own per-process counter, never reset per task or per arm",
+      "source": "the candidate's own max_requests field; reviewed values are [256, 1024]",
+      "budget_unchanged": false,
+      "phase": "not started; run budget only"
+    },
+    "history_records_total": 327,
+    "history_records_per_task": {
+      "sub_U000828_4": 26,
+      "sub_U000828_5": 33,
+      "sub_U000828_6": 61,
+      "sub_U000828_7": 41,
+      "sub_U000828_8": 24,
+      "sub_U000828_9": 28,
+      "sub_U000828_10": 31,
+      "sub_U000828_11": 47,
+      "sub_U000828_12": 36
+    }
+  },
+  "config": {
+    "schema_version": "ae-cloud-re-multiturn-0.4",
+    "expected_model": "deepseek-flash",
+    "transport_profile": "deepseek-official-re-transport-v1",
+    "context_window": 1000000,
+    "temperature": 0.0,
+    "max_output_tokens": 2048,
+    "auxiliary_output_tokens": 4096,
+    "block_char_limit": 50000,
+    "max_tool_return_chars": 26214,
+    "max_requests": 1024,
+    "pacing": {
+      "driver_io_timeout_seconds": 900,
+      "proxy_upstream_io_timeout_seconds": 180,
+      "min_interval_seconds": 0
+    },
+    "capacity": {
+      "context_window": 1000000,
+      "window_source": "published_native",
+      "window_is_measured": false,
+      "capacity_is_a_guarantee": false,
+      "service_limit": {
+        "published_native_context_tokens": 1000000,
+        "endpoint_measured_tokens": null,
+        "endpoint_measurement": "not measured: no verified DeepSeek endpoint measurement exists",
+        "published_sources": [
+          "https://api-docs.deepseek.com/ (checked 2026-09-15 by the operator)"
+        ]
+      },
+      "verification": "unverified",
+      "output_reserve_tokens": 2048,
+      "auxiliary_reserve_tokens": 4096,
+      "no_compaction": "ae-no-compaction-1",
+      "count_basis": [
+        "no_token_count_byte_gate_only"
+      ],
+      "max_request_bytes": 2097152,
+      "tokenizer": {
+        "target": null,
+        "asset_target": null,
+        "asset_evidence": "no verified DeepSeek tokenizer exists in this workspace; none is reused",
+        "exploration_only": true
+      },
+      "derived_caps": {
+        "native_tool_return_truncation_chars": 800000,
+        "tool_return_guard_chars": 26214
+      }
+    },
+    "multicall_profile": {
+      "version": "ae-multicall-receive-compat-1",
+      "retain_all_calls": true,
+      "preserve_native_ids": true,
+      "execute_serially": true,
+      "capture_order": "provider_response_order",
+      "unsupported_batch": "stop_before_any_side_effect",
+      "wire_parallel_tool_calls": false
+    }
+  },
+  "boundaries": [
+    "one fresh persistent Letta agent per arm, initialized once from the SAME verified t3 cutoff",
+    "R executes t4->t12 to completion before E starts t4; the two arms never interleave",
+    "each phase appends only that task's original interactions records plus its raw instruction",
+    "prior batches are never resent; no future task is ever sent; no gold preference is filled in",
+    "the t4 predicate oracle is diagnostic only and is declared NULL for t5..t12",
+    "a low or wrong native score keeps its real value and does NOT stop the remaining tasks",
+    "a native evaluation/protocol anomaly stops the whole pair and keeps earlier evidence",
+    "environment continuity is per-task re-initialization, not real-world state continuity"
+  ],
+  "tasks": [
+    {
+      "number": 4,
+      "subtask_id": "sub_U000828_4",
+      "domain": "delivery",
+      "current_time": "2024-06-23",
+      "history_records": 26
+    },
+    {
+      "number": 5,
+      "subtask_id": "sub_U000828_5",
+      "domain": "instore",
+      "current_time": "2024-10-17",
+      "history_records": 33
+    },
+    {
+      "number": 6,
+      "subtask_id": "sub_U000828_6",
+      "domain": "delivery",
+      "current_time": "2025-06-23",
+      "history_records": 61
+    },
+    {
+      "number": 7,
+      "subtask_id": "sub_U000828_7",
+      "domain": "instore",
+      "current_time": "2025-09-29",
+      "history_records": 41
+    },
+    {
+      "number": 8,
+      "subtask_id": "sub_U000828_8",
+      "domain": "instore",
+      "current_time": "2025-10-24",
+      "history_records": 24
+    },
+    {
+      "number": 9,
+      "subtask_id": "sub_U000828_9",
+      "domain": "delivery",
+      "current_time": "2026-01-10",
+      "history_records": 28
+    },
+    {
+      "number": 10,
+      "subtask_id": "sub_U000828_10",
+      "domain": "instore",
+      "current_time": "2026-05-08",
+      "history_records": 31
+    },
+    {
+      "number": 11,
+      "subtask_id": "sub_U000828_11",
+      "domain": "delivery",
+      "current_time": "2026-08-31",
+      "history_records": 47
+    },
+    {
+      "number": 12,
+      "subtask_id": "sub_U000828_12",
+      "domain": "delivery",
+      "current_time": "2026-11-28",
+      "history_records": 36
+    }
+  ],
+  "arm_initial_blocks_equal": true,
+  "omitted": "User profile, instructions/history text, endpoints and runtime filesystem paths omitted from this compact extract; not a replacement for the sealed plan."
+}

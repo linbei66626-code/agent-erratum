@@ -1,0 +1,384 @@
+diff --git a/letta/agents/letta_agent_v3.py b/letta/agents/letta_agent_v3.py
+index f2af960..b95dc83 100644
+--- a/letta/agents/letta_agent_v3.py
++++ b/letta/agents/letta_agent_v3.py
+@@ -1,5 +1,6 @@
+ import asyncio
+ import json
++import os
+ import uuid
+ from typing import Any, AsyncGenerator, Dict, Optional
+ 
+@@ -73,6 +74,11 @@ from letta.services.summarizer.compact import compact_messages
+ from letta.services.summarizer.summarizer_config import CompactionSettings
+ from letta.services.summarizer.summarizer_sliding_window import count_tokens
+ from letta.services.summarizer.thresholds import get_compaction_trigger_threshold
++from letta.helpers.ae_no_compaction import (
++    NoCompactionPolicyError,
++    capacity_gate_decision,
++    policy_state,
++)
+ from letta.settings import settings, summarizer_settings
+ from letta.system import package_function_response
+ from letta.utils import safe_create_task_with_return, validate_function_response
+@@ -140,6 +146,312 @@ class LettaAgentV3(LettaAgentV2):
+         self.turns: list[TurnTokenData] = []
+         self.return_token_ids: bool = False
+ 
++    def _ae_capacity_counter(self):
++        """The counting basis for this process, built once.
++
++        The authoritative count is the OFFICIAL tokenizer's count of the exact
++        request body, because the provider's own accounting is what the hard window
++        is expressed in and an approximate byte heuristic can under-estimate Chinese
++        text by more than 2x. The pinned `count_tokens_with_tools` runs beside it and
++        the larger of the two is used, so the gate can only become stricter.
++
++        Returns None when no loader is configured: an uncounted request is refused by
++        the gate, never waved through.
++        """
++        if getattr(self, "_ae_counter_cache", "missing") != "missing":
++            return self._ae_counter_cache
++        counter = None
++        path = os.environ.get("AE_QWEN_TOKENIZER_JSON")
++        config_path = os.environ.get("AE_QWEN_TOKENIZER_CONFIG")
++        if path and config_path and os.path.isfile(path) and os.path.isfile(config_path):
++            try:
++                from letta.helpers.ae_qwen_tokenizer import QwenBpeTokenizer
++
++                counter = QwenBpeTokenizer(path, config_path)
++            except Exception as exc:  # a configured but unusable counter is a gap
++                self.logger.warning(f"AE-CAPACITY: official tokenizer unusable: {exc}")
++                counter = None
++        self._ae_counter_cache = counter
++        return counter
++
++    async def _ae_capacity_gate(self, request_data) -> dict:
++        """Decide whether THIS built request may be sent, before anything is sent.
++
++        `request_data` is the real object `build_request_data` returned: a DICT whose
++        `messages` are already the wire dictionaries the provider will receive
++        (system prompt included) and whose `tools` are the wire tool schemas. The
++        count therefore describes the request that would really go out.
++
++        The PRIMARY count is the shared `count_request_prompt` entry - the official
++        tokenizer over the official chat template, i.e. the model-visible prompt. Its
++        identity is checked before it is trusted: the assets must be the ones the run
++        declared, and the count is refused (never approximated) when they are not.
++
++        The pinned `count_tokens_with_tools` may only make the gate STRICTER: it is
++        consulted after a primary count exists, and used only when it is larger. It is
++        never a substitute for a missing primary count - an approximate counter can
++        under-count, and a positive approximation must not become an authorisation.
++        """
++        from letta.helpers.ae_no_compaction import capacity_gate_decision
++
++        tags = self.agent_state.tags
++        state = policy_state(tags)
++        if state["state"] != "on":
++            if state["state"] == "off":
++                return {"active": False, "allowed": True}
++            return {"active": True, "allowed": False,
++                    "reason": "unknown_policy_version", "tag": state["tag"]}
++        window = int(self.agent_state.llm_config.context_window or 0)
++        reserve = int(self.agent_state.llm_config.max_tokens or 0)
++        messages = request_data.get("messages") if isinstance(request_data, dict) else None
++        tools = (request_data.get("tools") if isinstance(request_data, dict) else None) or []
++        if not isinstance(messages, list) or not messages:
++            return {"active": True, "allowed": False, "reason": "request_shape_unrecognised"}
++        # The MODEL-SPECIFIC exploratory branch (a provider with no verified tokenizer).
++        # It is taken ONLY when the service was started with the declared byte policy, so
++        # the Qwen token path below is unchanged for every other model. It measures THIS
++        # request's own bytes and never calls the official counter first: a token number is
++        # neither required nor produced here.
++        byte_policy = self._ae_byte_gate_policy()
++        if byte_policy["declared"]:
++            request_model = (request_data.get("model")
++                             if isinstance(request_data, dict) else None)
++            return capacity_gate_decision(
++                agent_tags=tags, reserve_tokens=reserve, context_window=window,
++                count_basis=byte_policy["count_basis"],
++                count_source=byte_policy["count_source"],
++                request_bytes=self._ae_request_bytes(request_data),
++                byte_budget=byte_policy["byte_budget"],
++                declared_wire_model=byte_policy["wire_model"],
++                request_wire_model=request_model)
++        primary = self._ae_primary_count(messages, tools)
++        counted, source = primary["tokens"], primary["source"]
++        if counted is None:
++            return capacity_gate_decision(
++                agent_tags=tags, prompt_tokens=None, reserve_tokens=reserve,
++                context_window=window, count_source=None)
++        tightened = await self._ae_pinned_count(messages, tools)
++        if isinstance(tightened, int) and tightened > counted:
++            counted, source = tightened, "pinned_token_counter_tightened"
++        return capacity_gate_decision(
++            agent_tags=tags,
++            prompt_tokens=counted,
++            reserve_tokens=reserve,
++            context_window=window,
++            count_source=source,
++        )
++
++    def _ae_byte_gate_policy(self) -> dict:
++        """The declared byte-only policy, read from the service environment.
++
++        Undeclared is the default and leaves the token path exactly as it was. A declared
++        policy with an unusable budget is reported as undeclared, so the request falls
++        through to the refusal it would have had - it never becomes an authorisation.
++        """
++        basis = os.environ.get("AE_BYTE_GATE_COUNT_BASIS")
++        budget = os.environ.get("AE_BYTE_GATE_MAX_REQUEST_BYTES")
++        wire_model = os.environ.get("AE_BYTE_GATE_WIRE_MODEL")
++        if not basis and not budget and not wire_model:
++            return {"declared": False}      # the unchanged default path
++        if not basis or not wire_model:
++            # A HALF-declared policy is refused explicitly by the gate below rather than
++            # falling back to a token path that may hold a counter: a partial declaration
++            # must not silently change which gate a model faces.
++            return {"declared": True, "count_basis": basis or "",
++                    "count_source": "byte_policy_incomplete",
++                    "wire_model": wire_model or "",
++                    "byte_budget": -1}
++        try:
++            budget_value = int(budget)
++        except (TypeError, ValueError):
++            return {"declared": True, "count_basis": basis,
++                    "count_source": "byte_policy_incomplete",
++                    "wire_model": wire_model, "byte_budget": -1}
++        return {"declared": True, "count_basis": basis,
++                "count_source": basis, "byte_budget": budget_value,
++                "wire_model": wire_model}
++
++    def _ae_wire_body(self, request_data):
++        """The body the SDK will REALLY serialize: `extra_body` merged into the top level.
++
++        The OpenAI SDK carries the fields it has no Python argument for (`thinking` and
++        friends) through `extra_body`, and merges that mapping into the JSON body before
++        serializing it - with the `extra_body` entry winning a collision, exactly as the
++        client's own `_merge_mappings` does. Measuring the Python wrapper instead of this
++        merged view would measure a body that is never sent.
++        """
++        if not isinstance(request_data, dict):
++            raise NoCompactionPolicyError("the provider request must be a mapping")
++        extra = request_data.get("extra_body")
++        if extra is None:
++            return request_data
++        if not isinstance(extra, dict):
++            raise NoCompactionPolicyError("extra_body must be a mapping when it is set")
++        merged = {key: value for key, value in request_data.items() if key != "extra_body"}
++        merged.update(extra)
++        return merged
++
++    def _ae_request_bytes(self, request_data) -> int:
++        """The REAL outgoing request's byte size, measured on the MERGED wire body.
++
++        The bytes counted here are the bytes httpx serializes for the request that is
++        really sent (`json.dumps(..., ensure_ascii=False, separators=(",", ":"))`), so a
++        field the SDK carries through `extra_body` is part of the measurement instead of
++        being hidden inside a Python-only wrapper. A body that cannot be serialized is
++        reported as unavailable and the gate refuses it.
++        """
++        try:
++            return len(json.dumps(self._ae_wire_body(request_data), ensure_ascii=False,
++                                  separators=(",", ":")).encode("utf-8"))
++        except (TypeError, ValueError):
++            return -1
++
++    def _ae_transport_fields(self) -> dict:
++        """The DECLARED transport's own required request fields, from the environment.
++
++        Undeclared is the default and adds nothing, so the historical Qwen path stays
++        byte-identical. A HALF declaration is refused here, never completed silently and
++        never turned into a provider default: a request that needs an explicit mode must
++        not be sent without one just because the service guessed it.
++        """
++        wire_model = os.environ.get("AE_TRANSPORT_WIRE_MODEL")
++        raw_fields = os.environ.get("AE_TRANSPORT_REQUIRED_FIELDS")
++        if not wire_model and not raw_fields:
++            return {"declared": False, "wire_model": None, "fields": {}}
++        if not wire_model or not raw_fields:
++            raise NoCompactionPolicyError(
++                "the declared transport request shape is incomplete: "
++                "AE_TRANSPORT_WIRE_MODEL and AE_TRANSPORT_REQUIRED_FIELDS are declared "
++                "together or not at all")
++        try:
++            fields = json.loads(raw_fields)
++        except (TypeError, ValueError):
++            raise NoCompactionPolicyError(
++                "AE_TRANSPORT_REQUIRED_FIELDS is not a JSON object")
++        if not isinstance(fields, dict) or not fields:
++            raise NoCompactionPolicyError(
++                "AE_TRANSPORT_REQUIRED_FIELDS must be a nonempty JSON object")
++        return {"declared": True, "wire_model": wire_model, "fields": fields}
++
++    def _ae_apply_transport_fields(self, request_data) -> dict:
++        """Put the declared transport's required fields on THIS request, exactly once.
++
++        The declaration is MODEL-SPECIFIC: another model's request is left untouched (the
++        proxy refuses a request that does not name the declared model on identity, so a
++        silent substitution is impossible here). A request that already carries one of the
++        fields with a DIFFERENT value is a refusal, never a silent override - the client's
++        own value is never rewritten to make a request succeed. The caller runs this BEFORE
++        the capacity gate, so the bytes the gate measures are the bytes really sent.
++        """
++        policy = self._ae_transport_fields()
++        if not policy["declared"]:
++            return {"declared": False, "applied": False, "fields": []}
++        if not isinstance(request_data, dict):
++            raise NoCompactionPolicyError(
++                "the declared transport request shape needs a mapping request")
++        if request_data.get("model") != policy["wire_model"]:
++            return {"declared": True, "applied": False, "wire_model": policy["wire_model"],
++                    "request_model": request_data.get("model"), "fields": [],
++                    "reason": "request_model_is_not_the_declared_wire_model"}
++        # The declared fields travel through `extra_body`, the ONE carrier the pinned
++        # OpenAI SDK turns into top-level JSON: a bare top-level Python keyword is not an
++        # argument its `create()` accepts, which is exactly how the live run failed.
++        existing = request_data.get("extra_body")
++        if existing is None:
++            carrier = {}
++        elif isinstance(existing, dict):
++            carrier = dict(existing)
++        else:
++            raise NoCompactionPolicyError(
++                "extra_body must be a mapping when it is set; the declared transport "
++                "fields cannot be merged into a non-mapping carrier")
++        for name, value in policy["fields"].items():
++            if name in carrier and carrier[name] != value:
++                raise NoCompactionPolicyError(
++                    "the request already carries " + str(name) + " in extra_body with "
++                    "another value; the declared transport value is never overridden "
++                    "silently")
++            if name in request_data:
++                if request_data[name] != value:
++                    raise NoCompactionPolicyError(
++                        "the request already carries " + str(name) + " at the top level "
++                        "with another value; the declared transport value is never "
++                        "overridden silently")
++                # The SAME value in the place the SDK rejects: move it to its carrier so
++                # the identical field still reaches the wire as a valid call.
++                request_data.pop(name)
++            carrier[name] = value
++        if carrier:
++            request_data["extra_body"] = carrier
++        return {"declared": True, "applied": True, "wire_model": policy["wire_model"],
++                "fields": sorted(policy["fields"]),
++                "carrier": "extra_body",
++                "wire_keys": sorted(carrier)}
++
++    def _ae_primary_count(self, messages, tools) -> dict:
++        """The shared counting entry over the declared assets, or a refusal.
++
++        Returns `{"tokens": None, "source": <why>}` when the assets are absent or are
++        not the declared ones: the gate then refuses the request instead of counting
++        it some other way.
++        """
++        identity = self._ae_tokenizer_identity()
++        tokenizer = self._ae_capacity_counter()
++        if tokenizer is None:
++            return {"tokens": None, "source": identity.get("refusal", "no_tokenizer_assets")}
++        try:
++            from letta.helpers.ae_qwen_tokenizer import count_request_prompt
++
++            counted = count_request_prompt(tokenizer, messages, tools)
++        except Exception as exc:
++            self.logger.warning(f"AE-CAPACITY: primary count failed: {exc}")
++            return {"tokens": None, "source": "primary_count_failed"}
++        return {"tokens": int(counted["prompt_tokens"]),
++                "source": "official_qwen_tokenizer:" + str(identity.get("revision") or "?")}
++
++    def _ae_tokenizer_identity(self) -> dict:
++        """Which tokenizer assets this process may count with.
++
++        Production counting requires the TARGET model's own assets, declared by
++        `AE_QWEN_TOKENIZER_TARGET`. A run that only has the Qwen3 family cache is
++        refused here (and may still be counted offline as an explicitly labelled
++        exploration): a family asset is not the target model's identity.
++        """
++        cached = getattr(self, "_ae_identity_cache", None)
++        if cached is not None:
++            return cached
++        target = os.environ.get("AE_QWEN_TOKENIZER_TARGET")
++        declared = os.environ.get("AE_QWEN_TOKENIZER_ASSET_TARGET")
++        revision = os.environ.get("AE_QWEN_TOKENIZER_REVISION")
++        if not target:
++            identity = {"refusal": "tokenizer_target_not_declared"}
++        elif not declared:
++            identity = {"refusal": "tokenizer_asset_target_not_declared"}
++        elif declared != target:
++            identity = {"refusal": "tokenizer_asset_is_not_the_target"}
++        else:
++            identity = {"target": target, "asset_target": declared, "revision": revision}
++        self._ae_identity_cache = identity
++        return identity
++
++    async def _ae_pinned_count(self, messages, tools):
++        """Letta's own counter, consulted ONLY to tighten an existing primary count."""
++        try:
++            from letta.services.summarizer.summarizer_sliding_window import (
++                count_tokens_with_tools,
++            )
++
++            value = await count_tokens_with_tools(
++                actor=self.actor,
++                llm_config=self.agent_state.llm_config,
++                messages=messages,
++                tools=tools,
++            )
++        except Exception as exc:
++            self.logger.warning(f"AE-CAPACITY: pinned token count unavailable: {exc}")
++            return None
++        return value if isinstance(value, int) else None
++
+     def _compute_tool_return_truncation_chars(self) -> int:
+         """Compute a dynamic cap for tool returns in requests.
+ 
+@@ -1147,6 +1459,26 @@ class LettaAgentV3(LettaAgentV2):
+                         except Exception:
+                             # if this fails, we simply don't enable parallel tool use
+                             pass
++                        # AE-TRANSPORT: the declared transport's own required request
++                        # fields (an explicit non-thinking mode) are applied to the FINAL
++                        # request BEFORE the gate, so the gate measures the bytes that are
++                        # really sent and the proxy never receives a request that omits a
++                        # field its declared profile requires.
++                        self._ae_apply_transport_fields(request_data)
++                        # AE-CAPACITY: the FINAL provider request for this step is
++                        # built here, so this is where the declared window is checked
++                        # against this request's own input plus this call's output
++                        # reserve. The count is the pinned token counter's own count of
++                        # this request when it is available and the declared byte bound
++                        # otherwise; with neither, the gate refuses instead of letting
++                        # the service claim the request fits.
++                        _ae_gate = await self._ae_capacity_gate(request_data)
++                        if not _ae_gate.get("allowed", True):
++                            self.should_continue = False
++                            raise NoCompactionPolicyError(
++                                "request-time capacity gate refused the request: "
++                                + _ae_gate.get("reason", "unknown")
++                                + f" ({_ae_gate})")
+                         if dry_run:
+                             yield request_data
+                             return
+diff --git a/letta/services/summarizer/compact.py b/letta/services/summarizer/compact.py
+index 025f624..b3d2a43 100644
+--- a/letta/services/summarizer/compact.py
++++ b/letta/services/summarizer/compact.py
+@@ -177,6 +177,16 @@ async def compact_messages(
+         CompactResult containing the summary message, compacted messages, summary text,
+         and updated context token estimate.
+     """
++    # AE-NO-COMPACTION: this function is the ONE place a compaction reaches a
++    # summariser (the pinned agent calls it from both its post-step threshold check
++    # and its context-window-error recovery). Under the declared policy the attempt
++    # stops HERE: no summariser model call, no change to the in-context message set,
++    # no summary message. An unrecognised policy tag is refused too - the upstream
++    # default must never run silently under an AE tag.
++    from letta.helpers.ae_no_compaction import require_no_compaction
++
++    require_no_compaction(agent_tags, "compact_messages")
++
+     summarizer_config = compaction_settings if compaction_settings else CompactionSettings()
+ 
+     # Build the LLMConfig used for summarization

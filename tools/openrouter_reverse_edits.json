@@ -1,0 +1,38 @@
+{
+ "ae_cloud_re_multiturn.py": [
+  [
+   "from ae_cloud_proxy import COMPAT_PROFILE, MODEL, PROFILES, profile_of",
+   "from ae_cloud_proxy import COMPAT_PROFILE, MODEL"
+  ],
+  [
+   "#: The explicit transport mapping a non-default profile must record. Both are optional\n#: for the default SiliconFlow transport (where wire model == internal alias and there is\n#: no provider route block), and REQUIRED when the declared profile differs - so the run\n#: record always carries the identity the wire request will use.\nTRANSPORT_FIELDS = {\"upstream_model\", \"provider_slug\"}\n",
+   ""
+  ],
+  [
+   "    if not isinstance(config, dict) or set(config) - MULTICALL_FIELDS - CAPACITY_FIELDS \\\n            - TRANSPORT_FIELDS != FIELDS:",
+   "    if not isinstance(config, dict) or set(config) - MULTICALL_FIELDS - CAPACITY_FIELDS != FIELDS:"
+  ],
+  [
+   "        # A 0.3 run may also record the explicit transport mapping. It is optional for\n        # the default transport (its wire model IS the internal alias and it has no\n        # provider route) and required by the profile check below when it differs.\n        if set(config) not in (FIELDS | MULTICALL_FIELDS | CAPACITY_FIELDS,\n                               FIELDS | MULTICALL_FIELDS | CAPACITY_FIELDS | TRANSPORT_FIELDS):\n            raise ValueError(\"the 0.3 schema must declare exactly the profile and capacity fields\"\n                             \" (plus the optional transport mapping)\")",
+   "        if set(config) != FIELDS | MULTICALL_FIELDS | CAPACITY_FIELDS:\n            raise ValueError(\"the 0.3 schema must declare exactly the profile and capacity fields\")"
+  ],
+  [
+   "    if config[\"transport_profile\"] not in PROFILES:\n        raise ValueError(\"the run must declare a reviewed transport profile\")\n    transport = PROFILES[config[\"transport_profile\"]]\n    # The INTERNAL alias is the project's one model handle; the transport profile maps\n    # it to the WIRE model the provider must receive. Both are checked, and the mapping\n    # is declared explicitly in the config so the run record carries it.\n    if (config[\"model_handle\"] != \"vllm/\" + MODEL\n            or config[\"expected_model\"] != transport.internal_model):\n        raise ValueError(\"the R/E pair targets the one explicit cloud model\")\n    if transport.wire_model != transport.internal_model:\n        if config.get(\"upstream_model\") != transport.wire_model:\n            raise ValueError(\n                \"this transport sends another wire model; the config must record the \"\n                \"mapping in `upstream_model`\")\n    elif config.get(\"upstream_model\") not in (None, transport.wire_model):\n        raise ValueError(\"the declared wire model is not this transport profile's\")\n    if transport.provider_slug is not None:\n        if config.get(\"provider_slug\") != transport.provider_slug:\n            raise ValueError(\n                \"this transport pins a provider route; the config must record it in \"\n                \"`provider_slug`\")\n    elif config.get(\"provider_slug\") is not None:\n        raise ValueError(\"this transport profile has no provider route\")",
+   "    if config[\"model_handle\"] != \"vllm/\" + MODEL or config[\"expected_model\"] != MODEL:\n        raise ValueError(\"the R/E pair targets the one explicit cloud model\")\n    if config[\"transport_profile\"] != COMPAT_PROFILE:\n        raise ValueError(\"the explicit compatibility transport profile is required\")"
+  ],
+  [
+   "        wire_model = profile_of(config).wire_model\n        matches = [m for m in listed.get(\"data\", [])\n                   if isinstance(m, dict) and m.get(\"id\") == wire_model]",
+   "        matches = [m for m in listed.get(\"data\", []) if isinstance(m, dict) and m.get(\"id\") == MODEL]"
+  ]
+ ],
+ "ae_cloud_re_multiturn_input_audit.py": [
+  [
+   "        from ae_cloud_proxy import CloudConfig, PROFILES, profile_of\n        need(opened[0].get(\"profile\") in PROFILES, \"wrong_cloud_profile\")\n        config = CloudConfig(**opened[0][\"config\"])\n        config.validate()\n        declared_transport = profile_of(config)\n        need(declared_transport.profile == opened[0].get(\"profile\"),\n             \"profile_config_mismatch\")\n        need(config.max_requests <= PAIR_MAX_REQUESTS, \"safety_cap_exceeded\")\n        self.cloud_config = config\n        self.declared_transport = declared_transport",
+   "        from ae_cloud_proxy import COMPAT_PROFILE, CloudConfig, MODEL\n        need(opened[0].get(\"profile\") == COMPAT_PROFILE, \"wrong_cloud_profile\")\n        config = CloudConfig(**opened[0][\"config\"])\n        config.validate()\n        need(config.max_requests <= PAIR_MAX_REQUESTS, \"safety_cap_exceeded\")\n        self.cloud_config = config"
+  ],
+  [
+   "        # The internal alias and the transport are whatever the run declared; the\n        # transport's WIRE model (which may differ from the alias) is a separate,\n        # explicitly recorded mapping.\n        need(plan_config.get(\"expected_model\") == config.model, \"wrong_expected_model\")\n        need(plan_config.get(\"transport_profile\") == config.profile, \"wrong_transport_profile\")\n        need(plan_config.get(\"upstream_model\", declared_transport.wire_model)\n             == declared_transport.wire_model, \"wire_model_mapping_changed\")\n        need(plan_config.get(\"provider_slug\", declared_transport.provider_slug)\n             == declared_transport.provider_slug, \"provider_route_changed\")",
+   "        need(plan_config.get(\"expected_model\") == MODEL, \"wrong_expected_model\")\n        need(plan_config.get(\"transport_profile\") == COMPAT_PROFILE, \"wrong_transport_profile\")"
+  ]
+ ]
+}

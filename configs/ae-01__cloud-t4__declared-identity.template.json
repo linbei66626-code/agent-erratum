@@ -1,0 +1,30 @@
+{
+  "schema_version": "ae-cloud-t4-probe-0.1",
+  "source_note": "TEMPLATE - the operator fills this in from the endpoint's OWN documentation. The probe refuses any placeholder, refuses to reuse the local vLLM field, and refuses to assume a third-party gateway is the official API.",
+  "identity": {
+    "probe": "required",
+    "evidence": "REPLACE_ME - where the declared model name was confirmed (documentation URL, console, or the endpoint's own /models listing)",
+    "why": null
+  },
+  "api": {
+    "base_url": "REPLACE_ME - the laboratory-declared base URL, e.g. https://api.deepseek.com for the official candidate, or the gateway's own documented origin",
+    "chat_path": "/chat/completions",
+    "models_path": "/models",
+    "tokenize_path": null
+  },
+  "wire_model": "REPLACE_ME - the wire model name from that endpoint's own catalogue; no mapping is guessed",
+  "mode": {
+    "name": "REPLACE_ME - the declared non-thinking mode",
+    "payload": {
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "source": "REPLACE_ME - the documentation this field shape comes from; it is NOT verified by this probe"
+  },
+  "capacity": {
+    "token_counting_available": false,
+    "max_request_bytes": 262144,
+    "declared_context_window_tokens": null
+  }
+}

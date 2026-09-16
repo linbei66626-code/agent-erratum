@@ -1,0 +1,83 @@
+{
+  "schema_version": "ae-cloud-re-multiturn-0.5",
+  "purpose": "original_multiturn_replacement_pair",
+  "start_turn": 4,
+  "end_turn": 12,
+  "arms": [
+    "rewrite",
+    "erratum"
+  ],
+  "model_origin": "http://127.0.0.1:8000",
+  "letta_origin": "http://127.0.0.1:8283",
+  "model_handle": "openai/deepseek-flash",
+  "expected_model": "deepseek-flash",
+  "transport_profile": "deepseek-official-re-transport-v1",
+  "upstream_model": "deepseek-flash",
+  "provider_slug": null,
+  "context_window": 1000000,
+  "context_window_source": "published_native",
+  "max_output_tokens": 2048,
+  "auxiliary_output_tokens": 4096,
+  "temperature": 0.0,
+  "seed": 300,
+  "block_char_limit": 50000,
+  "max_rounds": 64,
+  "max_steps": 3,
+  "max_stage_posts": 64,
+  "max_user_exchanges": 12,
+  "max_tool_return_chars": 26214,
+  "timeout_seconds": 900,
+  "max_request_bytes": 2097152,
+  "max_response_bytes": 16777216,
+  "max_requests": 1024,
+  "pacing": {
+    "driver_io_timeout_seconds": 900,
+    "proxy_upstream_io_timeout_seconds": 180,
+    "min_interval_seconds": 0
+  },
+  "capacity": {
+    "context_window": 1000000,
+    "window_source": "published_native",
+    "window_is_measured": false,
+    "capacity_is_a_guarantee": false,
+    "service_limit": {
+      "published_native_context_tokens": 1000000,
+      "endpoint_measured_tokens": null,
+      "endpoint_measurement": "not measured: no verified DeepSeek endpoint measurement exists",
+      "published_sources": [
+        "https://api-docs.deepseek.com/ (checked 2026-09-15 by the operator)"
+      ]
+    },
+    "verification": "unverified",
+    "output_reserve_tokens": 2048,
+    "auxiliary_reserve_tokens": 4096,
+    "no_compaction": "ae-no-compaction-1",
+    "count_basis": [
+      "no_token_count_byte_gate_only"
+    ],
+    "max_request_bytes": 2097152,
+    "tokenizer": {
+      "target": null,
+      "asset_target": null,
+      "asset_evidence": "no verified DeepSeek tokenizer exists in this workspace; none is reused",
+      "exploration_only": true
+    },
+    "derived_caps": {
+      "native_tool_return_truncation_chars": 800000,
+      "tool_return_guard_chars": 26214
+    }
+  },
+  "exploratory_capacity_protocol": "exploratory_no_token_capacity_guarantee",
+  "simulator_protocol": "ae-user-simulator-role-boundary-1",
+  "evaluation_protocol": "ae-evaluation-split-1",
+  "multicall_profile": {
+    "version": "ae-multicall-receive-compat-1",
+    "retain_all_calls": true,
+    "preserve_native_ids": true,
+    "execute_serially": true,
+    "capture_order": "provider_response_order",
+    "unsupported_batch": "stop_before_any_side_effect",
+    "wire_parallel_tool_calls": false
+  },
+  "deterministic_evaluation": "offline_diagnostic"
+}

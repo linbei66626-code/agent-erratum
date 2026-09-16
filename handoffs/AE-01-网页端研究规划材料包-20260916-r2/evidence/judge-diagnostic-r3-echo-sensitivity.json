@@ -1,0 +1,44 @@
+{
+  "diagnostic_only": true,
+  "input_audit_passed": false,
+  "official_audit_reasons": [
+    {
+      "code": "judged_simulation_missing_for_this_task"
+    }
+  ],
+  "tasks": [
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_7",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 20,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "rewrite",
+      "task": "sub_U000828_10",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 20,
+      "remaining_judge_gate": "passed"
+    },
+    {
+      "arm": "erratum",
+      "task": "sub_U000828_10",
+      "native_submission_verified": true,
+      "generated_timestamp_fields": 14,
+      "remaining_judge_gate": "passed"
+    }
+  ],
+  "adaptations": [
+    "Simulation located by exact completed.subtask_id and crosschecked with last_evaluation; native Task prefix checked; message conversion verified except generated timestamp absent from original transcript; diagnostic judge view uses original transcript and subtask_id.",
+    "Auxiliary diagnostic preserves verified phase order and within-phase recorded list order; does not fabricate missing recorded_at. All other auxiliary checks remain."
+  ],
+  "echo_equality_disabled_diagnostic_only": true,
+  "later_checks": {
+    "auxiliary_record_order_diagnostic": "passed",
+    "cloud_totals_gate": "passed",
+    "separation_gate": "passed"
+  },
+  "judge_chains_passed": 3,
+  "auxiliary_mappings": 98
+}

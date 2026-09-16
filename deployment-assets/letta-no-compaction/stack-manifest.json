@@ -1,0 +1,81 @@
+{
+  "schema": "ae-letta-patch-stack-manifest-1",
+  "profile_version": "ae-no-compaction-stack-1",
+  "note": "The STACKED service checkout: the reviewed multicall patch and this round's no-compaction capacity patch in ONE tree, which is what a capacity run's service must import.",
+  "verification": {
+    "offline_chain_verified": true,
+    "applied_to_live_server": false,
+    "note": "offline_chain_verified means the stacked bytes equal the pinned baseline plus the reviewed multicall patch plus the reviewed no-compaction patch plus this round's staged helper sources. applied_to_live_server is only set once the running service itself produced a stack load receipt; the audit requires that receipt and never accepts a client-built one."
+  },
+  "generated_at_utc": "2026-09-16T03:13:49.760768+00:00",
+  "upstream_commit": "56ba9c25552605eec89de8ed3dc6394b625c1993",
+  "patch_chain": [
+    "deployment-assets/letta-multicall/ae-multicall-letta.patch",
+    "deployment-assets/letta-no-compaction/ae-no-compaction-letta.patch"
+  ],
+  "multicall_manifest": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/deployment-assets/letta-multicall/manifest.json",
+  "no_compaction_manifest": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/deployment-assets/letta-no-compaction/manifest.json",
+  "enabling": {
+    "environment": "AE_LETTA_PATCH_STACK_PROFILE",
+    "value": "ae-no-compaction-stack-1",
+    "manifest_environment": "AE_LETTA_PATCH_STACK_MANIFEST",
+    "module_sha_environment": "AE_LETTA_MULTICALL_MODULE_SHA256",
+    "receipt_environment": "AE_LETTA_PATCH_STACK_RECEIPT",
+    "strict_gate": "the service startup entry calls ae_multicall.verify_stack_gate() and resolves every changed and new file through the real import machinery before Letta is imported; a declared stack that does not verify stops the process instead of running with less checking",
+    "unchanged": "the multicall-only profile and every sealed protocol keep their own manifest, checkout and receipt"
+  },
+  "compat_module": {
+    "path": "ae_multicall.py",
+    "sha256": "1ea94fbd75f6d5018ae85a18b3ca8b591049a207ef6da938a08c83ad6a540b5a"
+  },
+  "baseline_checkout": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/.ae-verify-src/letta-v1",
+  "multicall_checkout": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/.ae-verify-src/letta-multicall-patch/letta-v1",
+  "letta_checkout": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/.ae-verify-src/letta-no-compaction-patch/letta-v1",
+  "patch": {
+    "path": "/Users/lrc/Documents/研究生资料/实验/agent-erratum/deployment-assets/letta-no-compaction/ae-no-compaction-letta.patch",
+    "sha256": "3d14593e268620da40afddd19c761601b9bccc44ad86a156d2e0d6faf5796aac",
+    "applies_with": "git apply",
+    "patch_base": "the multicall-patched checkout root"
+  },
+  "sources": {
+    "letta/agents/letta_agent_v3.py": {
+      "module": "letta.agents.letta_agent_v3",
+      "filename": "letta_agent_v3.py"
+    },
+    "letta/helpers/ae_multicall_compat.py": {
+      "module": "letta.helpers.ae_multicall_compat",
+      "filename": "ae_multicall_compat.py"
+    },
+    "letta/helpers/ae_no_compaction.py": {
+      "module": "letta.helpers.ae_no_compaction",
+      "filename": "ae_no_compaction.py"
+    },
+    "letta/helpers/ae_qwen_tokenizer.py": {
+      "module": "letta.helpers.ae_qwen_tokenizer",
+      "filename": "ae_qwen_tokenizer.py"
+    },
+    "letta/schemas/message.py": {
+      "module": "letta.schemas.message",
+      "filename": "message.py"
+    },
+    "letta/services/summarizer/compact.py": {
+      "module": "letta.services.summarizer.compact",
+      "filename": "compact.py"
+    }
+  },
+  "patched_files": {
+    "letta/agents/letta_agent_v3.py": "a6f6aa7adffc20743c8433129d8d02cb2b571f2111f9f3f095206cba54f11e30",
+    "letta/schemas/message.py": "8e2f28d8fd24defede7ce8b97b66ac0ffb227d84065f24f16c989a2ee88529eb",
+    "letta/helpers/ae_multicall_compat.py": "faec1925f07c8a52600c3fc0d0a04639e0f260718d0d27fe3525a878982bc26b",
+    "letta/services/summarizer/compact.py": "b294a42574d15256ff77faf0eb0413dcfbc2c7cdcdc08183c0eb40889d02efc5"
+  },
+  "new_files": {
+    "letta/helpers/ae_no_compaction.py": "77603ba435dd0fe5a65779c1acbda770a9e664fdcb5e8fe4f929188b23f77121",
+    "letta/helpers/ae_qwen_tokenizer.py": "0b50de7ebe9f76be75318728a6a996200e688e0917f431d92d1b3d4bc487c740"
+  },
+  "deployment_layout": {
+    "service_checkout": "the STACKED checkout, loaded under AE_LETTA_PATCH_STACK_PROFILE=ae-no-compaction-stack-1",
+    "multicall_only_checkout": "kept for the earlier multicall protocol; its manifest, checkout and receipt are unchanged",
+    "receipt": "written by the SERVICE process after it resolved the files it imports; a client-built receipt is never accepted"
+  }
+}

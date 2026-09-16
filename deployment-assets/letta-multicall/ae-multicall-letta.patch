@@ -1,0 +1,118 @@
+diff --git a/letta/agents/letta_agent_v3.py b/letta/agents/letta_agent_v3.py
+index 8dabe57..f2af960 100644
+--- a/letta/agents/letta_agent_v3.py
++++ b/letta/agents/letta_agent_v3.py
+@@ -1334,12 +1334,38 @@ class LettaAgentV3(LettaAgentV2):
+ 
+                 # Enforce parallel_tool_calls=false by truncating to first tool call
+                 # Some providers (e.g. Gemini) don't respect this setting via API, so we enforce it client-side
++                # AE-MULTICALL: the decision is taken HERE, while the received call list
++                # is still complete - i.e. before any truncation. Three outcomes:
++                #   * profile not declared -> upstream truncation runs unchanged;
++                #   * profile declared and the strict gate verifies -> keep every
++                #     declared client tool call for serial client-side execution;
++                #   * profile declared but unverifiable/unknown/unsupported ->
++                #     MulticallRefused is raised, so the step stops with the raw
++                #     response intact and NO tool side effect. Falling back to
++                #     truncation here would silently drop calls.
+                 if len(tool_calls) > 1 and not active_llm_config.parallel_tool_calls:
+-                    self.logger.warning(
+-                        f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
+-                        f"Truncating to first tool call: {tool_calls[0].function.name}"
++                    from letta.helpers.ae_multicall_compat import (
++                        KEEP_ALL,
++                        MulticallRefused,
++                        NOT_DECLARED,
++                        multicall_decision,
+                     )
+-                    tool_calls = [tool_calls[0]]
++
++                    _ae_decision = multicall_decision(tool_calls, self.client_tools)
++                    if _ae_decision == KEEP_ALL:
++                        self.logger.info(
++                            f"AE-MULTICALL kept {len(tool_calls)} declared client tool "
++                            "calls for serial client-side execution"
++                        )
++                    elif _ae_decision != NOT_DECLARED:
++                        raise MulticallRefused(
++                            f"unexpected multicall decision {_ae_decision!r}")
++                    else:
++                        self.logger.warning(
++                            f"LLM returned {len(tool_calls)} tool calls but parallel_tool_calls=false. "
++                            f"Truncating to first tool call: {tool_calls[0].function.name}"
++                        )
++                        tool_calls = [tool_calls[0]]
+ 
+             # get the new generated `Message` objects from handling the LLM response
+             new_messages, self.should_continue, self.stop_reason = await self._handle_ai_response(
+diff --git a/letta/schemas/message.py b/letta/schemas/message.py
+index 80a92f6..8ac566b 100644
+--- a/letta/schemas/message.py
++++ b/letta/schemas/message.py
+@@ -18,6 +18,9 @@ from pydantic import BaseModel, Field, field_validator, model_validator
+ 
+ from letta.constants import DEFAULT_MESSAGE_TOOL, DEFAULT_MESSAGE_TOOL_KWARG, REQUEST_HEARTBEAT_PARAM, TOOL_CALL_ID_MAX_LEN
+ from letta.helpers.datetime_helpers import get_utc_time, is_utc_datetime
++# AE-MULTICALL: opt-in receive compatibility for multiple client tool calls
++# and full-length tool-call ids. See letta/helpers/ae_multicall_compat.py.
++from letta.helpers.ae_multicall_compat import preserve_tool_call_id, sanitize_tool_call_id_compat
+ from letta.helpers.json_helpers import json_dumps
+ from letta.local_llm.constants import INNER_THOUGHTS_KWARG, INNER_THOUGHTS_KWARG_VERTEX
+ from letta.otel.tracing import trace_method
+@@ -1451,7 +1454,10 @@ class Message(BaseMessage):
+ 
+                 if max_tool_id_length:
+                     for tool_call_dict in openai_message["tool_calls"]:
+-                        tool_call_dict["id"] = tool_call_dict["id"][:max_tool_id_length]
++                        # AE-MULTICALL: keep the provider id whole under the profile.
++                        tool_call_dict["id"] = preserve_tool_call_id(
++                            tool_call_dict["id"], max_tool_id_length
++                        )
+ 
+         elif self.role == "tool":
+             # Handle tool returns - if tool_returns exists, use the first one
+@@ -1465,7 +1471,7 @@ class Message(BaseMessage):
+                 openai_message = {
+                     "content": func_response,
+                     "role": self.role,
+-                    "tool_call_id": tool_return.tool_call_id[:max_tool_id_length] if max_tool_id_length else tool_return.tool_call_id,
++                    "tool_call_id": preserve_tool_call_id(tool_return.tool_call_id, max_tool_id_length),
+                 }
+             else:
+                 # Legacy fallback for old message format
+@@ -1474,7 +1480,7 @@ class Message(BaseMessage):
+                 openai_message = {
+                     "content": legacy_content,
+                     "role": self.role,
+-                    "tool_call_id": self.tool_call_id[:max_tool_id_length] if max_tool_id_length else self.tool_call_id,
++                    "tool_call_id": preserve_tool_call_id(self.tool_call_id, max_tool_id_length),
+                 }
+ 
+         else:
+@@ -1523,7 +1529,7 @@ class Message(BaseMessage):
+                         {
+                             "content": func_response,
+                             "role": "tool",
+-                            "tool_call_id": tr.tool_call_id[:max_tool_id_length] if max_tool_id_length else tr.tool_call_id,
++                            "tool_call_id": preserve_tool_call_id(tr.tool_call_id, max_tool_id_length),
+                         }
+                     )
+                 continue
+@@ -2038,7 +2044,7 @@ class Message(BaseMessage):
+                     content.append(
+                         {
+                             "type": "tool_use",
+-                            "id": sanitize_tool_call_id(tool_call.id),
++                            "id": sanitize_tool_call_id_compat(tool_call.id),
+                             "name": tool_call.function.name,
+                             "input": tool_call_input,
+                         }
+@@ -2082,7 +2088,7 @@ class Message(BaseMessage):
+                     content.append(
+                         {
+                             "type": "tool_result",
+-                            "tool_use_id": sanitize_tool_call_id(resolved_tool_call_id),
++                            "tool_use_id": sanitize_tool_call_id_compat(resolved_tool_call_id),
+                             "content": tool_result_content,
+                         }
+                     )

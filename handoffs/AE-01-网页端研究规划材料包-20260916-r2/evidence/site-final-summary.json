@@ -1,0 +1,42 @@
+{
+  "source": "server original paths, complete public sealed CLI, separate processes, socket connections forbidden",
+  "strict": {
+    "status": "INVALID",
+    "input_audit_passed": false,
+    "strict_protocol_passed": false,
+    "native_semantics_checks_passed": false,
+    "invalid_reasons": [
+      {
+        "code": "judge_decision_rubric_text_differs_from_the_criteria"
+      }
+    ]
+  },
+  "native_by_id": {
+    "status": "STRICT_PROTOCOL_NOT_MET",
+    "input_audit_passed": false,
+    "strict_protocol_passed": false,
+    "native_semantics_checks_passed": true,
+    "invalid_reasons": [
+      {
+        "code": "judge_decision_rubric_text_differs_from_the_criteria"
+      }
+    ]
+  },
+  "judge_phases": 18,
+  "auxiliary_calls": 98,
+  "echo_differences": 6,
+  "last_checks": [
+    "native_conversion_source",
+    "judge_gate",
+    "auxiliary_gate",
+    "cloud_totals_gate",
+    "separation_gate",
+    "task_scores"
+  ],
+  "raw_files_unchanged": 7,
+  "new_model_calls": 0,
+  "full_report_sha256": {
+    "input-audit-sealed-site-native-r1.json": "8e838abf729bcbf8ef3d14ddf034a4dd91bc03eaffa3cbc77a45a5681cc1575f",
+    "input-audit-sealed-site-strict-r1.json": "8e6e2cb1e71d0b0f5a62ead971de076738e211ea8c3548d207d4bfbbaa46d91c"
+  }
+}

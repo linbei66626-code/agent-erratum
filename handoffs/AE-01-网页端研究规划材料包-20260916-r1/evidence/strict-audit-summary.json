@@ -1,0 +1,29 @@
+{
+  "status": "INVALID",
+  "input_audit_passed": false,
+  "invalid_reasons": [
+    {
+      "code": "judged_simulation_missing_for_this_task"
+    }
+  ],
+  "checks_executed_unique": [
+    "load",
+    "stack_evidence_gate",
+    "config_gate",
+    "provenance_gate",
+    "request_budget",
+    "capacity_gate",
+    "phase_gate",
+    "agent_posts",
+    "capture_role_binding",
+    "bind_cloud_calls",
+    "task_material_gate",
+    "system_framing_rewrite",
+    "system_framing_erratum",
+    "wire_gate",
+    "runtime_user_gate",
+    "tool_mapping_gate",
+    "memory_gate"
+  ],
+  "scope_note": "Extract of original strict report, not the diagnostic compatibility run. Missing auxiliary counts at early exit are not zero model calls."
+}
